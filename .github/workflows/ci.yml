@@ -1,0 +1,75 @@
+name: CI / Build & Publish
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "pnpm"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Install pnpm
+        run: npm install -g pnpm
+
+      - name: Install root dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build frontend
+        working-directory: apps/frontend
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm build
+
+      - name: Build backend (TypeScript)
+        working-directory: apps/backend
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm build
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push backend image to ghcr
+        working-directory: apps/backend
+        run: |
+          IMAGE=ghcr.io/${{ github.repository_owner }}/college-backend:${{ github.sha }}
+          docker build -t $IMAGE .
+          docker push $IMAGE
+
+      - name: Build and push frontend image to ghcr (optional)
+        working-directory: apps/frontend
+        run: |
+          IMAGE=ghcr.io/${{ github.repository_owner }}/college-frontend:${{ github.sha }}
+          # You may add a production Dockerfile for Next.js here
+          docker build -t $IMAGE .
+          docker push $IMAGE
+
+      - name: Create Release (Draft)
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: "build-${{ github.sha }}"
+          name: "Build ${{ github.sha }}"
+          body: "Automated build artifacts for commit ${{ github.sha }}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
