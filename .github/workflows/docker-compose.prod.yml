@@ -1,0 +1,49 @@
+version: "3.8"
+services:
+  postgres:
+    image: postgres:15
+    restart: always
+    environment:
+      POSTGRES_DB: college
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: secure_postgres_password_here
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7
+    restart: always
+
+  backend:
+    build:
+      context: ./apps/backend
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: "postgresql://postgres:secure_postgres_password_here@postgres:5432/college?schema=public"
+      JWT_SECRET: "replace-with-strong-secret"
+      FRONTEND_URL: "https://your-frontend-domain.example"
+      STRIPE_SECRET_KEY: "${STRIPE_SECRET_KEY:-}"
+      OPENAI_API_KEY: "${OPENAI_API_KEY:-}"
+      VAPID_PUBLIC_KEY: "${VAPID_PUBLIC_KEY:-}"
+      VAPID_PRIVATE_KEY: "${VAPID_PRIVATE_KEY:-}"
+    ports:
+      - "4000:4000"
+    depends_on:
+      - postgres
+      - redis
+    restart: always
+
+  frontend:
+    build:
+      context: ./apps/frontend
+      dockerfile: Dockerfile # you may add a Next.js production Dockerfile
+    environment:
+      NEXT_PUBLIC_API_URL: "https://your-backend-domain.example"
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    restart: always
+
+volumes:
+  pgdata:
