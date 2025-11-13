@@ -1,0 +1,16 @@
+"name": "college-management",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "prisma"
+  ],
+  "scripts": {
+    "dev": "concurrently \"pnpm --filter apps/backend dev\" \"pnpm --filter apps/frontend dev\"",
+    "start:backend": "pnpm --filter apps/backend dev",
+    "start:frontend": "pnpm --filter apps/frontend dev"
+  },
+  "devDependencies": {
+    "concurrently": "^8.0.0",
+    "pnpm": "^8.0.0"
+  }
+}
