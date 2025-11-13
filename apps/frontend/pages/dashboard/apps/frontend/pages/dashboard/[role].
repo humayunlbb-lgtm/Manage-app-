@@ -1,0 +1,17 @@
+import { useRouter } from 'next/router'
+import Layout from '../../components/Layout'
+import DashboardWidgets from '../../components/DashboardWidgets'
+
+export default function RoleDashboard({ setTheme, theme }: any) {
+  const router = useRouter()
+  const { role } = router.query
+
+  return (
+    <Layout setTheme={setTheme} theme={theme}>
+      <div className="p-6">
+        <h2 className="text-2xl font-bold capitalize">{role} Dashboard</h2>
+        <DashboardWidgets role={role as string} />
+      </div>
+    </Layout>
+  )
+}
